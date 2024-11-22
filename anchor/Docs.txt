@@ -1,0 +1,17 @@
+Initialise Vesting Contract
+
+Give employer ability to add employees
+
+Allow employees to claim vested tokens
+
+
+Functions that will be created : 
+Create Vesting Account
+Create employee Vesting
+Claim Tokens
+
+It will use the following structs : 
+CreateVestingAccount -> This struct will have a field which uses struct VestingAccount
+CreateEmployeeAccount -> ..                                  .. .. EmployeeAccount
+ClaimTokens -> It will use both Vesting and Employee account struct
+These structs will use the anchor spl token interfaces like TokenAccount,TokenInterface,self,Mint,TransferChecked
