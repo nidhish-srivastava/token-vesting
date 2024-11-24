@@ -1,0 +1,116 @@
+Initialise Vesting Contract
+
+Give employer ability to add employees
+
+Allow employees to claim vested tokens
+
+
+Functions that will be created : 
+Create Vesting Account
+Create employee Vesting
+Claim Tokens
+
+It will use the following structs : 
+CreateVestingAccount -> This struct will have a field which uses struct VestingAccount
+CreateEmployeeAccount -> ..                                  .. .. EmployeeAccount
+ClaimTokens -> It will use both Vesting and Employee account struct
+These structs will use the anchor spl token interfaces like TokenAccount,TokenInterface,self,Mint,TransferChecked
+
+
+Claim Tokens function logic -------->
+Context and Function Parameters
+ctx: Context<ClaimTokens>: This represents the context in which the function is called, including all the accounts involved in the transaction.
+_company_name: String: This parameter is passed but not used within the function. It might be useful for logging or future extensions.
+Key Components of the Function
+Retrieve Employee Account and Current Time:
+
+rust
+Copy code
+let employee_account = &mut ctx.accounts.employee_account;
+let now = Clock::get()?.unix_timestamp;
+employee_account: A mutable reference to the employee's account containing vesting details.
+now: The current Unix timestamp fetched from the Solana clock.
+Cliff Time Check:
+
+rust
+Copy code
+if now < employee_account.cliff_time {
+    return Err(ErrorCode::ClaimNotAvailableYet.into());
+}
+This check ensures that tokens cannot be claimed before the cliff time (the initial period during which no tokens vest).
+Calculate Vested Amount:
+
+rust
+Copy code
+let time_since_start = now.saturating_sub(employee_account.start_time);
+let total_vesting_time = employee_account.end_time.saturating_sub(employee_account.start_time);
+let vested_amount = if now >= employee_account.end_time {
+    employee_account.total_amount
+} else {
+    (employee_account.total_amount * time_since_start) / total_vesting_time
+};
+time_since_start: The time elapsed since the vesting started.
+total_vesting_time: The total duration of the vesting period.
+vested_amount: The amount of tokens vested up to the current time. If the end time has passed, the total amount is vested; otherwise, it's calculated proportionally based on the elapsed time.
+Calculate Claimable Amount:
+
+rust
+Copy code
+let claimable_amount = vested_amount.saturating_sub(employee_account.total_withdrawn);
+if claimable_amount == 0 {
+    return Err(ErrorCode::NothingToClaim.into());
+}
+claimable_amount: The amount of tokens that can currently be claimed. It's the vested amount minus any tokens already withdrawn. If there's nothing to claim, an error is returned.
+Transfer Tokens:
+
+rust
+Copy code
+let transfer_cpi_accounts = TransferChecked {
+    from: ctx.accounts.treasury_token_account.to_account_info(),
+    mint: ctx.accounts.mint.to_account_info(),
+    to: ctx.accounts.employee_token_account.to_account_info(),
+    authority: ctx.accounts.treasury_token_account.to_account_info(),
+};
+let cpi_program = ctx.accounts.token_program.to_account_info();
+let signer_seeds: &[&[&[u8]]] = &[
+    &[
+        b"vesting_treasury",
+        ctx.accounts.vesting_account.company_name.as_ref(),
+        &[ctx.accounts.vesting_account.treasury_bump],
+    ],
+];
+let cpi_context = CpiContext::new(cpi_program, transfer_cpi_accounts).with_signer(signer_seeds);
+let decimals = ctx.accounts.mint.decimals;
+token_interface::transfer_checked(cpi_context, claimable_amount as u64, decimals)?;
+This segment sets up the token transfer using a Cross-Program Invocation (CPI). It prepares the transfer details including the source (from), the mint, the destination (to), and the authority.
+signer_seeds: These are seeds used to derive the program-derived address (PDA) for signing the transfer.
+token_interface::transfer_checked: This function actually performs the token transfer, ensuring the correct amount and decimals are transferred.
+Update Withdrawn Amount:
+
+rust
+Copy code
+employee_account.total_withdrawn += claimable_amount;
+Ok(())
+Finally, the total withdrawn amount is updated in the employee's account to reflect the newly claimed tokens.
+Summary
+The claim_tokens function enforces a vesting schedule by allowing employees to claim tokens only after certain conditions are met (e.g., after the cliff time). It calculates the vested and claimable amounts, then transfers the appropriate amount of tokens to the employee’s account, ensuring all operations adhere to the predefined vesting rules.
+
+
+CPI ------> 
+In the context of your vesting contract function, CPI is used to transfer tokens from the treasury to the employee's account.
+
+let transfer_cpi_accounts - This block sets up the necessary accounts involved in the token transfer. It specifies the source (treasury), the token mint, the destination (employee's account), and the authority that approves the transfer.
+Then we set up the cpi context
+
+This line invokes the transfer_checked function using CPI requesting it to transfer the specified claimable_amount of tokens, ensuring the number of decimals is respected.
+let decimals = ctx.accounts.mint.decimals;
+token_interface::transfer_checked(cpi_context, claimable_amount as u64, decimals)?;
+
+
+
+Commands --->
+
+anchor build 
+anchor deploy --provider.cluster localnet
+anchor keys sync
+spl-token create-token --url localhost  --> To get mint address using spl token program
