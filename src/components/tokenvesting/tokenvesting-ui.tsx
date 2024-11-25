@@ -107,15 +107,14 @@ function VestingCard({ account }: { account: PublicKey }) {
   );
 
   const handleCreateEmployeeVesting = () => {
-    const startTimestamp = Math.floor(new Date(startTime).getTime() / 1000);
-    const endTimestamp = Math.floor(new Date(endTime).getTime() / 1000);
-    const cliffTimestamp = Math.floor(new Date(cliffTime).getTime() / 1000);
-    const totalAmountParsed = parseInt(totalAmount, 10);
+    const startTimestamp = new Date(startTime).getTime() / 1000;
+    const endTimestamp = new Date(endTime).getTime() / 1000;
+    const cliffTimestamp = new Date(cliffTime).getTime() / 1000;
 
     createEmployeeVesting.mutateAsync({
       startTime: startTimestamp,
       endTime: endTimestamp,
-      totalAmount: totalAmountParsed,
+      totalAmount: parseInt(totalAmount),
       cliffTime: cliffTimestamp,
     });
   };
@@ -123,7 +122,7 @@ function VestingCard({ account }: { account: PublicKey }) {
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
-    <div className="card card-bordered border-base-300 border-4 text-neutral-content">
+    <div className="card card-bordered w-1/2 border-base-300 border-4 text-neutral-content">
       <div className="card-body items-center text-center">
         <div className="space-y-6">
           <h2
@@ -132,77 +131,54 @@ function VestingCard({ account }: { account: PublicKey }) {
           >
             {companyName}
           </h2>
-          <div className="card-actions justify-around space-y-4">
-            {/* Start Time */}
-            <div>
-              <label className="label text-sm font-medium" htmlFor="start-time">
-                Start Time
-              </label>
-              <input
-                id="start-time"
-                type="date"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="input input-bordered w-full max-w-xs"
-              />
-            </div>
-
-            {/* End Time */}
-            <div>
-              <label className="label text-sm font-medium" htmlFor="end-time">
-                End Time
-              </label>
-              <input
-                id="end-time"
-                type="date"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="input input-bordered w-full max-w-xs"
-              />
-            </div>
-
-            {/* Cliff Time */}
-            <div>
-              <label className="label text-sm font-medium" htmlFor="cliff-time">
-                Cliff Time
-              </label>
-              <input
-                id="cliff-time"
-                type="date"
-                value={cliffTime}
-                onChange={(e) => setCliffTime(e.target.value)}
-                className="input input-bordered w-full max-w-xs"
-              />
-            </div>
-
-            {/* Total Allocation */}
-            <div>
-              <label className="label text-sm font-medium" htmlFor="total-amount">
-                Total Allocation
-              </label>
-              <input
-                id="total-amount"
-                type="number"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(e.target.value)}
-                className="input input-bordered w-full max-w-xs"
-              />
-            </div>
-
-            {/* Button to Create Employee Vesting Account */}
-            <div>
-              <button
-                className="btn btn-xs lg:btn-md btn-outline"
-                onClick={handleCreateEmployeeVesting}
-                disabled={createEmployeeVesting.isPending}
-              >
-                Create Employee Vesting Account
-              </button>
-            </div>
+          <div className="card-actions justify-around">
+            <label className="label">
+              <span className="label-text">Start Time</span>
+            </label>
+            <input
+              type="date"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="input input-bordered w-full max-w-xs"
+            />
+            <label className="label">
+              <span className="label-text">End Time</span>
+            </label>
+            <input
+              type="date"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="input input-bordered w-full max-w-xs"
+            />
+            <label className="label">
+              <span className="label-text">Cliff Time</span>
+            </label>
+            <input
+              type="date"
+              value={cliffTime}
+              onChange={(e) => setCliffTime(e.target.value)}
+              className="input input-bordered w-full max-w-xs"
+            />
+            <label className="label">
+              <span className="label-text">Total Allocation</span>
+            </label>
+            <input
+              type="number"
+              placeholder="Total Allocation"
+              value={totalAmount}
+              onChange={(e) => setTotalAmount(e.target.value)}
+              className="input input-bordered w-full max-w-xs"
+            />
+            <button
+              className="btn btn-xs lg:btn-md btn-outline"
+              onClick={handleCreateEmployeeVesting}
+              disabled={createEmployeeVesting.isPending}
+            >
+              Create Employee Vesting Account
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-
 }
